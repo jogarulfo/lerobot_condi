@@ -14,17 +14,17 @@
 import pytest
 import torch
 
-from lerobot.common.constants import (
-    OPTIMIZER_PARAM_GROUPS,
-    OPTIMIZER_STATE,
-)
-from lerobot.common.optim.optimizers import (
+from lerobot.optim.optimizers import (
     AdamConfig,
     AdamWConfig,
     MultiAdamConfig,
     SGDConfig,
     load_optimizer_state,
     save_optimizer_state,
+)
+from lerobot.utils.constants import (
+    OPTIMIZER_PARAM_GROUPS,
+    OPTIMIZER_STATE,
 )
 
 

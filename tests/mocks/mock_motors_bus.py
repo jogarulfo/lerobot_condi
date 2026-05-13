@@ -1,8 +1,23 @@
+# Copyright 2025 The HuggingFace Inc. team. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # ruff: noqa: N802
 
-from lerobot.common.motors.motors_bus import (
+from lerobot.motors.motors_bus import (
     Motor,
     MotorsBus,
+    MotorsBusBase,
 )
 
 DUMMY_CTRL_TABLE_1 = {
@@ -108,6 +123,12 @@ class MockPortHandler:
 
 
 class MockMotorsBus(MotorsBus):
+    """Mock motor bus that bypasses hardware dependency checks.
+
+    Inherits from MotorsBus (alias for SerialMotorsBus) for type compatibility,
+    but calls MotorsBusBase.__init__ directly to skip the pyserial/deepdiff guards.
+    """
+
     available_baudrates = [500_000, 1_000_000]
     default_timeout = 1000
     model_baudrate_table = DUMMY_MODEL_BAUDRATE_TABLE
@@ -118,8 +139,13 @@ class MockMotorsBus(MotorsBus):
     normalized_data = ["Present_Position", "Goal_Position"]
 
     def __init__(self, port: str, motors: dict[str, Motor]):
-        super().__init__(port, motors)
+        # Skip SerialMotorsBus.__init__ (which guards pyserial/deepdiff)
+        # and call the base class directly — this mock never touches real serial.
+        MotorsBusBase.__init__(self, port, motors)
         self.port_handler = MockPortHandler(port)
+        self._id_to_model_dict = {m.id: m.model for m in self.motors.values()}
+        self._id_to_name_dict = {m.id: name for name, m in self.motors.items()}
+        self._model_nb_to_model_dict = {v: k for k, v in self.model_number_table.items()}
 
     def _assert_protocol_is_compatible(self, instruction_name): ...
     def _handshake(self): ...

@@ -20,7 +20,7 @@ from multiprocessing import Event, Queue
 
 import pytest
 
-from tests.utils import require_package  # our gRPC servicer class
+from tests.utils import skip_if_package_missing  # our gRPC servicer class
 
 
 @pytest.fixture(scope="function")
@@ -39,7 +39,7 @@ def learner_service_stub():
     close_learner_service_stub(channel, server)
 
 
-@require_package("grpc")
+@skip_if_package_missing("grpcio", "grpc")
 def create_learner_service_stub(
     shutdown_event: Event,
     parameters_queue: Queue,
@@ -50,8 +50,8 @@ def create_learner_service_stub(
 ):
     import grpc
 
-    from lerobot.common.transport import services_pb2_grpc  # generated from .proto
-    from lerobot.scripts.rl.learner_service import LearnerService
+    from lerobot.rl.learner_service import LearnerService
+    from lerobot.transport import services_pb2_grpc  # generated from .proto
 
     """Fixture to start a LearnerService gRPC server and provide a connected stub."""
 
@@ -75,7 +75,7 @@ def create_learner_service_stub(
     return services_pb2_grpc.LearnerServiceStub(channel), channel, server
 
 
-@require_package("grpc")
+@skip_if_package_missing("grpcio", "grpc")
 def close_learner_service_stub(channel, server):
     channel.close()
     server.stop(None)
@@ -83,7 +83,7 @@ def close_learner_service_stub(channel, server):
 
 @pytest.mark.timeout(3)  # force cross-platform watchdog
 def test_ready_method(learner_service_stub):
-    from lerobot.common.transport import services_pb2
+    from lerobot.transport import services_pb2
 
     """Test the ready method of the UserService."""
     request = services_pb2.Empty()
@@ -91,10 +91,10 @@ def test_ready_method(learner_service_stub):
     assert response == services_pb2.Empty()
 
 
-@require_package("grpc")
+@skip_if_package_missing("grpcio", "grpc")
 @pytest.mark.timeout(3)  # force cross-platform watchdog
 def test_send_interactions():
-    from lerobot.common.transport import services_pb2
+    from lerobot.transport import services_pb2
 
     shutdown_event = Event()
 
@@ -117,12 +117,12 @@ def test_send_interactions():
         services_pb2.InteractionMessage(transfer_state=services_pb2.TransferState.TRANSFER_END, data=b"8"),
     ]
 
-    def mock_intercations_stream():
+    def mock_interactions_stream():
         yield from list_of_interaction_messages
 
         return services_pb2.Empty()
 
-    response = client.SendInteractions(mock_intercations_stream())
+    response = client.SendInteractions(mock_interactions_stream())
     assert response == services_pb2.Empty()
 
     close_learner_service_stub(channel, server)
@@ -135,10 +135,10 @@ def test_send_interactions():
     assert interactions == [b"123", b"4", b"5", b"678"]
 
 
-@require_package("grpc")
+@skip_if_package_missing("grpcio", "grpc")
 @pytest.mark.timeout(3)  # force cross-platform watchdog
 def test_send_transitions():
-    from lerobot.common.transport import services_pb2
+    from lerobot.transport import services_pb2
 
     """Test the SendTransitions method with various transition data."""
     shutdown_event = Event()
@@ -181,10 +181,10 @@ def test_send_transitions():
     assert transitions == [b"transition_1transition_2transition_3", b"batch_1batch_2"]
 
 
-@require_package("grpc")
+@skip_if_package_missing("grpcio", "grpc")
 @pytest.mark.timeout(3)  # force cross-platform watchdog
 def test_send_transitions_empty_stream():
-    from lerobot.common.transport import services_pb2
+    from lerobot.transport import services_pb2
 
     """Test SendTransitions with empty stream."""
     shutdown_event = Event()
@@ -209,12 +209,12 @@ def test_send_transitions_empty_stream():
     assert transitions_queue.empty()
 
 
-@require_package("grpc")
+@skip_if_package_missing("grpcio", "grpc")
 @pytest.mark.timeout(10)  # force cross-platform watchdog
 def test_stream_parameters():
     import time
 
-    from lerobot.common.transport import services_pb2
+    from lerobot.transport import services_pb2
 
     """Test the StreamParameters method."""
     shutdown_event = Event()
@@ -267,10 +267,10 @@ def test_stream_parameters():
     assert time_diff == pytest.approx(seconds_between_pushes, abs=0.1)
 
 
-@require_package("grpc")
+@skip_if_package_missing("grpcio", "grpc")
 @pytest.mark.timeout(3)  # force cross-platform watchdog
 def test_stream_parameters_with_shutdown():
-    from lerobot.common.transport import services_pb2
+    from lerobot.transport import services_pb2
 
     """Test StreamParameters handles shutdown gracefully."""
     shutdown_event = Event()
@@ -319,13 +319,13 @@ def test_stream_parameters_with_shutdown():
     assert received_params == [b"param_batch_1", b"stop"]
 
 
-@require_package("grpc")
+@skip_if_package_missing("grpcio", "grpc")
 @pytest.mark.timeout(3)  # force cross-platform watchdog
 def test_stream_parameters_waits_and_retries_on_empty_queue():
     import threading
     import time
 
-    from lerobot.common.transport import services_pb2
+    from lerobot.transport import services_pb2
 
     """Test that StreamParameters waits and retries when the queue is empty."""
     shutdown_event = Event()
