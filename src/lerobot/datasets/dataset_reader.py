@@ -295,6 +295,10 @@ class DatasetReader:
         task_idx = item["task_index"].item()
         item["task"] = self._meta.tasks.iloc[task_idx].name
 
+        # Add conditioning if it was stored at the episode level.
+        if "conditioning" in self._meta.episodes[ep_idx]:
+            item["conditioning"] = self._meta.episodes[ep_idx]["conditioning"]
+
         # add subtask information if available
         if "subtask_index" in self._meta.features and self._meta.subtasks is not None:
             subtask_idx = item["subtask_index"].item()

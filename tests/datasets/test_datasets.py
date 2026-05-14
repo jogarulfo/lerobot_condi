@@ -222,7 +222,18 @@ def test_add_frame(tmp_path, empty_lerobot_dataset_factory):
     assert len(dataset) == 1
     assert dataset[0]["task"] == "Dummy task"
     assert dataset[0]["task_index"] == 0
+    assert dataset[0]["conditioning"] == 0
     assert dataset[0]["state"].ndim == 0
+
+
+def test_add_frame_with_conditioning(tmp_path, empty_lerobot_dataset_factory):
+    features = {"state": {"dtype": "float32", "shape": (1,), "names": None}}
+    dataset = empty_lerobot_dataset_factory(root=tmp_path / "test", features=features)
+    dataset.add_frame({"state": torch.randn(1), "task": "Dummy task"})
+    dataset.save_episode({"conditioning": 7})
+    dataset.finalize()
+
+    assert dataset[0]["conditioning"] == 7
 
 
 def test_add_frame_state_1d(tmp_path, empty_lerobot_dataset_factory):

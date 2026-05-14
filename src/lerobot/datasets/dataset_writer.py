@@ -221,6 +221,9 @@ class DatasetWriter:
         """Save the current episode in self.episode_buffer to disk."""
         episode_buffer = episode_data if episode_data is not None else self.episode_buffer
 
+        # Episode-level metadata that should be stored with the episode row, not as a frame feature.
+        conditioning = episode_buffer.pop("conditioning", None)
+
         validate_episode_buffer(episode_buffer, self._meta.total_episodes, self._meta.features)
 
         # size and task are special cases that won't be added to hf_dataset
@@ -234,6 +237,10 @@ class DatasetWriter:
 
         # Update tasks and task indices with new tasks if any
         self._meta.save_episode_tasks(episode_tasks)
+
+        # Default to the task index for single-task episodes when no explicit conditioning is provided.
+        if conditioning is None and len(episode_tasks) == 1:
+            conditioning = self._meta.get_task_index(episode_tasks[0])
 
         # Given tasks in natural language, find their corresponding task indices
         episode_buffer["task_index"] = np.array([self._meta.get_task_index(task) for task in tasks])
@@ -310,6 +317,8 @@ class DatasetWriter:
                     ep_metadata.update(self._save_episode_video(video_key, episode_index))
 
         # `meta.save_episode` need to be executed after encoding the videos
+        if conditioning is not None:
+            ep_metadata["conditioning"] = int(conditioning)
         self._meta.save_episode(episode_index, episode_length, episode_tasks, ep_stats, ep_metadata)
 
         if has_video_keys and use_batched_encoding:
