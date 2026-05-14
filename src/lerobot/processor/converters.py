@@ -170,9 +170,18 @@ def _extract_complementary_data(batch: dict[str, Any]) -> dict[str, Any]:
     subtask_key = {"subtask": batch["subtask"]} if "subtask" in batch else {}
     index_key = {"index": batch["index"]} if "index" in batch else {}
     task_index_key = {"task_index": batch["task_index"]} if "task_index" in batch else {}
+    conditioning_key = {"conditioning": batch["conditioning"]} if "conditioning" in batch else {}
     episode_index_key = {"episode_index": batch["episode_index"]} if "episode_index" in batch else {}
 
-    return {**pad_keys, **task_key, **subtask_key, **index_key, **task_index_key, **episode_index_key}
+    return {
+        **pad_keys,
+        **task_key,
+        **subtask_key,
+        **index_key,
+        **task_index_key,
+        **conditioning_key,
+        **episode_index_key,
+    }
 
 
 def create_transition(

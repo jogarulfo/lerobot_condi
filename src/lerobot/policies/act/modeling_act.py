@@ -491,10 +491,16 @@ class ACT(nn.Module):
                 encoder_in_tokens.extend(list(cam_features))
                 encoder_in_pos_embed.extend(list(cam_pos_embed))
 
-        # Add conditioning embedding if enabled and provided in the batch
-        if self.config.conditioning_dim and "conditioning" in batch:
-            task_embed = batch["conditioning"]  
-            task_embed = self.conditioning_proj(task_embed)  
+        # Add conditioning embedding if enabled.
+        if self.config.conditioning_dim:
+            if "conditioning" not in batch:
+                raise ValueError(
+                    "`conditioning` must be present in the batch when `conditioning_dim` is enabled."
+                )
+            task_embed = batch["conditioning"]
+            if isinstance(task_embed, Tensor) and task_embed.dim() > 1:
+                task_embed = task_embed.squeeze(-1)
+            task_embed = self.conditioning_proj(task_embed.long())
             encoder_in_tokens.append(task_embed)
             encoder_in_pos_embed.append(self.encoder_1d_feature_pos_embed.weight[-1].unsqueeze(0))
 

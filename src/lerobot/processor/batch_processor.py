@@ -142,7 +142,7 @@ class AddBatchDimensionComplementaryDataStep(ComplementaryDataProcessorStep):
     """
     Processor step to add a batch dimension to complementary data fields.
 
-    Handles specific keys like 'task', 'index', and 'task_index' to make them batched.
+    Handles specific keys like 'task', 'index', 'task_index', and 'conditioning' to make them batched.
     - 'task' (str) is wrapped in a list.
     - 'index' and 'task_index' (0D tensors) get a batch dimension.
     """
@@ -174,6 +174,12 @@ class AddBatchDimensionComplementaryDataStep(ComplementaryDataProcessorStep):
             task_index_value = complementary_data["task_index"]
             if isinstance(task_index_value, Tensor) and task_index_value.dim() == 0:
                 complementary_data["task_index"] = task_index_value.unsqueeze(0)
+
+        # Process conditioning field - add batch dim if 0D
+        if "conditioning" in complementary_data:
+            conditioning_value = complementary_data["conditioning"]
+            if isinstance(conditioning_value, Tensor) and conditioning_value.dim() == 0:
+                complementary_data["conditioning"] = conditioning_value.unsqueeze(0)
         return complementary_data
 
     def transform_features(
