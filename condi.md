@@ -16,6 +16,7 @@ python -m lerobot.scripts.lerobot_add_conditioning_labels \
 lerobot-train \
   --dataset.repo_id=jogarulfo/dataset_MVP_store_cardboardv1_0 \
   --policy.type=act \
+  --policy.repo_id=jogarulfo/act_model_to_store_cardboardv1_0 \
   --output_dir=outputs/train/act_model_to_store_cardboardv1_0 \
   --policy.conditioning_dim=2 \
   --batch_size=8 \

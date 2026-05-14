@@ -465,13 +465,20 @@ class ACT(nn.Module):
 
         # Prepare transformer encoder inputs.
         encoder_in_tokens = [self.encoder_latent_input_proj(latent_sample)]
-        encoder_in_pos_embed = list(self.encoder_1d_feature_pos_embed.weight.unsqueeze(1))
+        # Build positional embeddings for the 1D feature tokens incrementally so we don't double-count
+        # the conditioning positional embedding (which we append later only if enabled).
+        encoder_in_pos_embed = [self.encoder_1d_feature_pos_embed.weight[0].unsqueeze(0)]
+        pos_idx = 1
         # Robot state token.
         if self.config.robot_state_feature:
             encoder_in_tokens.append(self.encoder_robot_state_input_proj(batch[OBS_STATE]))
+            encoder_in_pos_embed.append(self.encoder_1d_feature_pos_embed.weight[pos_idx].unsqueeze(0))
+            pos_idx += 1
         # Environment state token.
         if self.config.env_state_feature:
             encoder_in_tokens.append(self.encoder_env_state_input_proj(batch[OBS_ENV_STATE]))
+            encoder_in_pos_embed.append(self.encoder_1d_feature_pos_embed.weight[pos_idx].unsqueeze(0))
+            pos_idx += 1
 
         if self.config.image_features:
             # For a list of images, the H and W may vary but H*W is constant.
@@ -507,6 +514,18 @@ class ACT(nn.Module):
         # Stack all tokens along the sequence dimension.
         encoder_in_tokens = torch.stack(encoder_in_tokens, axis=0)
         encoder_in_pos_embed = torch.stack(encoder_in_pos_embed, axis=0)
+
+        # Sanity check: token count must match positional-embedding count. If this fails, raise
+        # a clear error describing both counts to aid debugging instead of a low-level CUDA assert.
+        if encoder_in_tokens.shape[0] != encoder_in_pos_embed.shape[0]:
+            raise RuntimeError(
+                f"Encoder token count ({encoder_in_tokens.shape[0]}) != "
+                f"positional-embedding count ({encoder_in_pos_embed.shape[0]}). "
+                f"n_1d_pos_embeddings={self.encoder_1d_feature_pos_embed.num_embeddings}, "
+                f"conditioning_dim={self.config.conditioning_dim}, "
+                f"robot_state_feature={bool(self.config.robot_state_feature)}, "
+                f"env_state_feature={bool(self.config.env_state_feature)}"
+            )
 
         # Forward pass through the transformer modules.
         encoder_out = self.encoder(encoder_in_tokens, pos_embed=encoder_in_pos_embed)
