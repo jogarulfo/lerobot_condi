@@ -496,6 +496,7 @@ class ACT(nn.Module):
             task_embed = batch["conditioning"]  
             task_embed = self.conditioning_proj(task_embed)  
             encoder_in_tokens.append(task_embed)
+            encoder_in_pos_embed.append(self.encoder_1d_feature_pos_embed.weight[-1].unsqueeze(0))
 
         # Stack all tokens along the sequence dimension.
         encoder_in_tokens = torch.stack(encoder_in_tokens, axis=0)
